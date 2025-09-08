@@ -30,7 +30,7 @@
   /* Tiny extra space between emoji headings and divider line */
   .plan-section h3{
     font-size:1.35rem;color:#333;border-bottom:2px solid #e0e0e0;
-    padding-bottom:12px; /* spacing tweak */
+    padding-bottom:12px;
     margin:24px 0 16px;
   }
   .plan-section h3:first-child{margin-top:10px}
@@ -39,7 +39,7 @@
   .plan-section ul li{position:relative;padding-left:.5em;margin-bottom:.5em}
   .plan-section ul li::before{content:'✓';position:absolute;left:-1.5em;color:#0087FB;font-weight:700}
 
-  /* Slider styling (pretty pill track + outlined thumb) */
+  /* Slider */
   .slider-container{padding:8px 0 16px}
   #sliderValue{font-size:1.1rem;font-weight:700;color:#0087FB;margin:2px 0 10px}
   .slider{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:9999px;background:linear-gradient(90deg,#e5e7eb,#d1d5db);outline:none}
@@ -57,21 +57,12 @@
   body.pdf-export-mode #downloadBtn,
   body.pdf-export-mode #resetBtn{display:none !important}
 
-  /* === Mobile-first "stacked" routine list (replaces table) === */
-  .routine{border:1px solid #e5e7eb;background:#fff;border-radius:8px;overflow:hidden}
-  .routine-header{display:none}
-  .routine-item{padding:12px 14px;border-top:1px solid #eee}
-  .routine-item:first-child{border-top:none}
-  .r-row{display:flex;gap:10px;margin:4px 0}
-  .r-label{min-width:84px;font-weight:700;color:#333}
-  .r-val{color:#555;word-break:break-word}
-  /* WIDE screens: transform into 3 clean columns */
-  @media (min-width:700px){
-    .routine-header{display:grid;grid-template-columns:160px 120px 1fr;gap:0;background:#f6f7fa;border-bottom:1px solid #e5e7eb;padding:12px 14px;font-weight:700;color:#333}
-    .routine-item{display:grid;grid-template-columns:160px 120px 1fr;gap:0;align-items:start}
-    .routine-item .r-row{margin:0;display:block}
-    .routine-item .r-label{display:none}
-  }
+  /* === Vertical routine cards (mobile-first) === */
+  .routine-vertical{display:grid;gap:12px;margin-top:6px}
+  .rv-item{border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:12px 14px}
+  .rv-title{font-weight:700;color:#333;margin-bottom:6px}
+  .rv-line{margin:2px 0;color:#555}
+  .rv-label{font-weight:700;color:#444}
 </style>
 
 <div class="card" id="quiz"></div>
@@ -103,77 +94,77 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   })();
 
-  // ---------- Content library (RESTORED, with mobile-first routine) ----------
+  // ---------- Content library (RESTORED) ----------
   const blocks = {
     overview: {
-      career: (reasons, skills) => `<h3>Your Study Plan</h3><p>You are learning English for <strong>${reasons}</strong> and want to improve <strong>${skills}</strong>. The <strong>English Fluency in 90 Days</strong> program has five courses (50+ hours) taught by <strong>Luke</strong>. Each day you complete assignments, then practice with Luke’s AI assistant <strong>Cathy 🤖</strong>, who corrects grammar and runs realistic job role-plays.</p>`,
-      travel: (reasons, skills) => `<h3>Your Study Plan</h3><p>You are learning English for <strong>${reasons}</strong>. You want better <strong>${skills}</strong>. After each section, have a focused session with Luke’s AI assistant <strong>Cathy 🤖</strong> to practice assignments and common situations. Travel role-play scenarios aren’t the focus of the program, but Luke can provide a custom list to help you with that (just ask).</p>`,
-      personal: (reasons, skills) => `<h3>OYour Study Plan</h3><p>You are learning English for <strong>${reasons}</strong>. You want stronger <strong>${skills}</strong>. The five-course 90-day program (50+ hours) is taught by <strong>Luke</strong>, and is designed help you build a solid foundation of the habits and skills necessary to become fluent in English, once and for all. Cathy, Luke’s AI assistant, will provide feedback in assignments throughout the program, and help you practice conversation and speaking skills.</p>`,
-      enthusiastic: (reasons, skills) => `<h3>Your Study Plan</h3><p>You enjoy learning, which is great! To improve <strong>${skills}</strong>, you will need to work hard, which means not just learning and watching lessons, but also doing assignments, and practicing. This program is designed to give you a solid foundation of habits and skills to help you become fluent in English once and for all. In the program, you will complete lessons by Luke, and then practice assignments with <strong>Cathy 🤖</strong>, Luke’s AI assistant. You can also get help from Luke as you go.`,
-      limited: `<h3>Your Study Plan</h3><p>You’re a busy person. It’s hard to make time for things like English fluency, but where there is a will, there is a way. The key is to focus your study and practice time in a few blocks during the week, doing practice and reviewing feedback while you are doing other things, like having your morning coffee, or taking the bus. Luke’s 90-day fluency program can be just as impactful for someone learning on the go. Doing assignments and practicing can be done anywhere, using your phone, with Luke’s AI assistant Cathy. Flexibility is the key to success.</p>`
+      career: (reasons, skills) => `<h3>Overview</h3><p>You are learning English for <strong>${reasons}</strong> and want to improve <strong>${skills}</strong>. The <strong>English Fluency in 90 Days</strong> program has five courses (50+ hours) taught by <strong>Luke</strong>. Each day you complete assignments, then practice with Luke’s AI assistant <strong>Cathy 🤖</strong>, who corrects grammar and runs realistic job role-plays.</p>`,
+      travel: (reasons, skills) => `<h3>Overview</h3><p>You are learning English for <strong>${reasons}</strong>. You want better <strong>${skills}</strong>. After each section, have a focused session with Luke’s AI assistant <strong>Cathy 🤖</strong> to practice assignments and common situations. Travel role-play scenarios aren’t the focus of the program, but Luke can provide a custom list to help you with that (just ask).</p>`,
+      personal: (reasons, skills) => `<h3>Overview</h3><p>You are learning English for <strong>${reasons}</strong>. You want stronger <strong>${skills}</strong>. The five-course 90-day program (50+ hours) is taught by <strong>Luke</strong>, and is designed help you build a solid foundation of the habits and skills necessary to become fluent in English, once and for all. Cathy, Luke’s AI assistant, will provide feedback in assignments throughout the program, and help you practice conversation and speaking skills.</p>`,
+      enthusiastic: (reasons, skills) => `<h3>Overview</h3><p>You enjoy learning, which is great! To improve <strong>${skills}</strong>, you will need to work hard, which means not just learning and watching lessons, but also doing assignments, and practicing. This program is designed to give you a solid foundation of habits and skills to help you become fluent in English once and for all. In the program, you will complete lessons by Luke, and then practice assignments with <strong>Cathy 🤖</strong>, Luke’s AI assistant. You can also get help from Luke as you go.`,
+      limited: `<h3>Overview</h3><p>You’re a busy person. It’s hard to make time for things like English fluency, but where there is a will, there is a way. The key is to focus your study and practice time in a few blocks during the week, doing practice and reviewing feedback while you are doing other things, like having your morning coffee, or taking the bus. Luke’s 90-day fluency program can be just as impactful for someone learning on the go. Doing assignments and practicing can be done anywhere, using your phone, with Luke’s AI assistant Cathy. Flexibility is the key to success.</p>`
     },
+
+    /* === NEW vertical layout for the routine === */
     dailyRoutine: {
       hour: `
         <h3>📅 Recommended Daily Routine</h3>
-        <div class="routine">
-          <div class="routine-header"><div>Part</div><div>Time</div><div>What to Do</div></div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Part</span><span class="r-val">Lesson</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">35 min</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Work through the next lesson and note key phrases.</span></div>
+        <div class="routine-vertical">
+          <div class="rv-item">
+            <div class="rv-title">Lesson</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 35 min</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Work through the next lesson and note key phrases.</div>
           </div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Part</span><span class="r-val">Assignment + Practice</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">20 min</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Finish the assignment and practice new language or skills learned.</span></div>
+          <div class="rv-item">
+            <div class="rv-title">Assignment + Practice</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 20 min</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Finish the assignment and practice new language or skills learned.</div>
           </div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Part</span><span class="r-val">Chat with Cathy</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">10 min</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Role-play and get corrections.</span></div>
+          <div class="rv-item">
+            <div class="rv-title">Chat with Cathy</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 10 min</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Role-play and get corrections.</div>
           </div>
         </div>`,
       half: `
         <h3>📅 Recommended Daily Routine</h3>
-        <div class="routine">
-          <div class="routine-header"><div>Part</div><div>Time</div><div>What to Do</div></div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Part</span><span class="r-val">Lesson</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">35 min</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Work on the next chunk of lessons in the correct order.</span></div>
+        <div class="routine-vertical">
+          <div class="rv-item">
+            <div class="rv-title">Lesson</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 35 min</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Work on the next chunk of lessons in the correct order.</div>
           </div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Part</span><span class="r-val">Assignment + Practice</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">15 min</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Complete the assignment and do additional practice based on new things learned, if there is time.</span></div>
+          <div class="rv-item">
+            <div class="rv-title">Assignment + Practice</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 15 min</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Complete the assignment and do additional practice based on new things learned, if there is time.</div>
           </div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Part</span><span class="r-val">Chat with Cathy</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">10 min</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Quick corrections and taking notes based on feedback.</span></div>
+          <div class="rv-item">
+            <div class="rv-title">Chat with Cathy</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 10 min</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Quick corrections and taking notes based on feedback.</div>
           </div>
         </div>`,
       limited: `
         <h3>📅 Recommended Weekly Routine</h3>
-        <div class="routine">
-          <div class="routine-header"><div>Block</div><div>Time</div><div>What to Do</div></div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Block</span><span class="r-val">Lesson blocks</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">≈ 4 hr total</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Split into two or three focused sessions.</span></div>
+        <div class="routine-vertical">
+          <div class="rv-item">
+            <div class="rv-title">Lesson Blocks</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> ≈ 4 hr total</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Split into two or three focused sessions.</div>
           </div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Block</span><span class="r-val">Assignment + Practice</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">10–15 min after each block</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Do assignment right away. Practice other new skills or language when you find time (commute, breakfast, etc.).</span></div>
+          <div class="rv-item">
+            <div class="rv-title">Assignment + Practice</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 10–15 min after each block</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Do assignment right away. Practice other new skills or language when you find time (commute, breakfast, etc.).</div>
           </div>
-          <div class="routine-item">
-            <div class="r-row"><span class="r-label">Block</span><span class="r-val">Chat with Cathy</span></div>
-            <div class="r-row"><span class="r-label">Time</span><span class="r-val">10 min flexible</span></div>
-            <div class="r-row"><span class="r-label">What to Do</span><span class="r-val">Short conversations for feedback and quick quizzes.</span></div>
+          <div class="rv-item">
+            <div class="rv-title">Chat with Cathy</div>
+            <div class="rv-line"><span class="rv-label">Time:</span> 10 min flexible</div>
+            <div class="rv-line"><span class="rv-label">What to do:</span> Short conversations for feedback and quick quizzes.</div>
           </div>
         </div>`
     },
+
     weeklyCheck: `<h3>🔄 Weekly Check-In</h3><ol><li>Review lessons and note any issues or questions.</li><li>Send Luke a brief progress note on WhatsApp. Ask any questions you may have.</li><li>Set one clear learning goal for next week.</li></ol>`,
     cathyTips: `<h3>🤖 Using Cathy</h3><ul><li><strong>Instant feedback:</strong> Paste sentences or speech-to-text assignments into assignment GPTs, and be sure to ask follow-up questions.</li><li><strong>Role-plays:</strong> Practice real situations related to course content, and situations related to your goals. use the topics included in the Notion study template, and ask Luke for more topic recommendations if needed.</li><li><strong>Quick quizzes:</strong> Ask for short questions on new language, clarifications on grammar, etc. For quick questions, make a habit of getting immediate answers. This can help you start thinking in English more often throughout the day.</li></ul>`,
     notionTrack: `<h3>🗂️ Tracking in Notion</h3><ul><li>Log assignments and Cathy’s feedback from assignments, as well as lessons and conversations.</li><li>Save new phrases and common errors, and problem patterns that tend to repeat (ask Cathy to help you identify these). </li><li>Track weekly goals and notes. Review your notes regularly to keep things fresh. Goals should always have some output, and not simply be completing course lessons. Practice is just as important as learning.</li><li>Keep track of conversation and lesson topics so that you can quickly reference them.</li></ul>`,
@@ -186,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     motivationTips: {
       high: `<h3>🚀 Motivation Boost</h3><ul><li>Set clear personal goals and hold yourself to them. The best way to do this is share with Luke. For example, “This week I’m planning to complete sections 7, 8, and 9.” If you don’t make it, share that too.</li><li>Record a quick weekly summary to check progress. Send to Cathy for review, and feel free to share with Luke on WhatsApp.</li><li>Try advanced tasks like mock presentations. If you need ideas, ask Luke.</li></ul>`,
-      medium: `<h3>⚙️ Getting Started</h3><ul><li>Link conversation practice and lesson completion to a fixed habit such as coffee or commute, and write down specific practice goals. Share your goals with Luke for accountability.</li><li>Use a streak tracker and aim for five study days a week. Streaks are a great way to hold yourself accountable.</li><li>Ask a friend or Luke to check in with you once a week, to make sure you’re staying on track. A little pressure can be a good thing.</li></ul>`,
+      medium: `<h3>⚙️ Building Consistency</h3><ul><li>Link conversation practice and lesson completion to a fixed habit such as coffee or commute, and write down specific practice goals. Share your goals with Luke for accountability.</li><li>Use a streak tracker and aim for five study days a week. Streaks are a great way to hold yourself accountable.</li><li>Ask a friend or Luke to check in with you once a week, to make sure you’re staying on track. A little pressure can be a good thing.</li></ul>`,
       low: `<h3>🎈 Starting Small</h3><ul><li>Begin with ten-minute study bursts to get into the habit of learning and practicing. These will help you prove to yourself that you can do it, and it isn’t so hard. It’s the first step on the road to consistency.</li><li>Keep goals tiny: one lesson, one Cathy chat, done. But make sure you’re putting in a total of about four hours per week on lessons.</li><li>Celebrate every completed day. Share what you’ve learned with Luke, as well as any questions you may have. It may also be a good idea to use a streak, which means marking a calendar for each week that you stick to your study goals.</li></ul>`
     },
     routineHelp: {
@@ -228,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <button id="backBtn" onclick="prevStep()" ${current===0?'disabled':''}>Back</button>
           <button id="nextBtn" class="enabled" onclick="nextStep()">${s.buttonText||'Next'}</button>
         </div></div>`;
-      selections = ['Info screen viewed']; // ensures indexes match downstream
+      selections = ['Info screen viewed'];
     } else if (s.type === 'slider') {
       html += `
         <div class="question">${s.q}</div>
@@ -295,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const last=items.pop(); return `${items.join(', ')}, and ${last}`;
   }
 
-  // Use the original indices that assume the info screens are counted
+  // Map answers -> variant
   function pickVariant(a){
     const why = a[0]||'';
     const what = a[4]||'';
@@ -343,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <button id="resetBtn">Start Over</button>`;
   }
 
-  // CTA click (resilient)
+  // CTA click
   document.addEventListener('click', function(e){
     const cta = e.target.closest('#signUpBtn');
     if (!cta) return;

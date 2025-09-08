@@ -100,11 +100,11 @@ document.addEventListener('DOMContentLoaded', function () {
       career: (reasons, skills) => `<h3>Your Study Plan</h3><p>You are learning English for <strong>${reasons}</strong> and want to improve <strong>${skills}</strong>. The <strong>English Fluency in 90 Days</strong> program has five courses (50+ hours) taught by <strong>Luke</strong>. Each day you complete assignments, then practice with Luke’s AI assistant <strong>Cathy 🤖</strong>, who corrects grammar and runs realistic job role-plays.</p>`,
       travel: (reasons, skills) => `<h3>Your Study Plan</h3><p>You are learning English for <strong>${reasons}</strong>. You want better <strong>${skills}</strong>. After each section, have a focused session with Luke’s AI assistant <strong>Cathy 🤖</strong> to practice assignments and common situations. Travel role-play scenarios aren’t the focus of the program, but Luke can provide a custom list to help you with that (just ask).</p>`,
       personal: (reasons, skills) => `<h3>Your Study Plan</h3><p>You are learning English for <strong>${reasons}</strong>. You want stronger <strong>${skills}</strong>. The five-course 90-day program (50+ hours) is taught by <strong>Luke</strong>, and is designed help you build a solid foundation of the habits and skills necessary to become fluent in English, once and for all. Cathy, Luke’s AI assistant, will provide feedback in assignments throughout the program, and help you practice conversation and speaking skills.</p>`,
-      enthusiastic: (reasons, skills) => `<h3>Your Study Plan/h3><p>You enjoy learning, which is great! To improve <strong>${skills}</strong>, you will need to work hard, which means not just learning and watching lessons, but also doing assignments, and practicing. This program is designed to give you a solid foundation of habits and skills to help you become fluent in English once and for all. In the program, you will complete lessons by Luke, and then practice assignments with <strong>Cathy 🤖</strong>, Luke’s AI assistant. You can also get help from Luke as you go.`,
+      enthusiastic: (reasons, skills) => `<h3>Your Study Plan</h3><p>You enjoy learning, which is great! To improve <strong>${skills}</strong>, you will need to work hard, which means not just learning and watching lessons, but also doing assignments, and practicing. This program is designed to give you a solid foundation of habits and skills to help you become fluent in English once and for all. In the program, you will complete lessons by Luke, and then practice assignments with <strong>Cathy 🤖</strong>, Luke’s AI assistant. You can also get help from Luke as you go.</p>`,
       limited: `<h3>Your Study Plan</h3><p>You’re a busy person. It’s hard to make time for things like English fluency, but where there is a will, there is a way. The key is to focus your study and practice time in a few blocks during the week, doing practice and reviewing feedback while you are doing other things, like having your morning coffee, or taking the bus. Luke’s 90-day fluency program can be just as impactful for someone learning on the go. Doing assignments and practicing can be done anywhere, using your phone, with Luke’s AI assistant Cathy. Flexibility is the key to success.</p>`
     },
 
-    /* === NEW vertical layout for the routine === */
+    /* === Vertical layout for the routine === */
     dailyRoutine: {
       hour: `
         <h3>📅 Recommended Daily Routine</h3>
@@ -362,6 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  /* === TIMER: hide offer when expired === */
   function startTimer(){
     let endTime = safeStore.getL('discountEndTime');
     const now = Date.now();
@@ -369,15 +370,28 @@ document.addEventListener('DOMContentLoaded', function () {
       endTime = now + (29*60 + 35)*1000;
       safeStore.setL('discountEndTime', String(endTime));
     }
-    timerInterval = setInterval(() => {
+
+    const el = document.getElementById('timer');
+    const offer = document.getElementById('offerContainer');
+    if (!el || !offer) return;
+
+    const tick = () => {
+      // If the offer has been removed elsewhere, stop.
+      if (!document.body.contains(offer)) { clearInterval(timerInterval); return; }
+
       const left = +endTime - Date.now();
-      const el = document.getElementById('timer');
-      if (!el) return;
-      if (left <= 0) { clearInterval(timerInterval); el.textContent = 'Discount Expired'; return; }
+      if (left <= 0) {
+        clearInterval(timerInterval);
+        offer.remove();            // <-- hides timer/banner/button/subtext together
+        return;
+      }
       const m = Math.floor((left % (1000*60*60)) / (1000*60));
       const s = Math.floor((left % (1000*60)) / 1000);
       el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    }, 1000);
+    };
+
+    tick(); // update immediately
+    timerInterval = setInterval(tick, 1000);
   }
 
   function showProgressThenPlan(html){
@@ -434,4 +448,5 @@ document.addEventListener('DOMContentLoaded', function () {
   checkSession();
 });
 </script>
+
 

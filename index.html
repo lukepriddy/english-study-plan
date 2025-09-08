@@ -1,0 +1,372 @@
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f5}
+  .card{background:#fff;width:600px;max-width:100%;padding:26px 22px 36px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.08);overflow:auto;max-height:90vh;margin:20px auto}
+  /* Report mode: let the page (not the card) scroll */
+  .card.report-mode{max-height:none;overflow:visible}
+
+  .progress-container{width:100%;background:#e0e0e0;border-radius:4px;margin-bottom:24px;overflow:hidden}
+  .progress-bar{width:0%;height:8px;background:#0087FB;border-radius:4px;transition:width .2s}
+  .question{font-size:1.25rem;margin-bottom:1rem;line-height:1.45}
+  .options button{width:100%;padding:12px 16px;margin-bottom:14px;border:1px solid #ccc;border-radius:6px;background:#f9f9f9;font-size:1rem;cursor:pointer;text-align:left;color:#333}
+  .options button.selected{background:#e6f3ff;border-color:#0087FB;color:#0087FB;font-weight:700}
+  .nav-buttons{display:flex;gap:10px;margin-top:6px}
+  #backBtn,#nextBtn,#downloadBtn,#resetBtn{width:100%;padding:12px 16px;border:none;border-radius:6px;font-size:1.05rem;cursor:pointer;text-align:center}
+  #backBtn{background:#e0e0e0;color:#333}
+  #backBtn:disabled{background:#f5f5f5;color:#aaa;cursor:not-allowed}
+  #nextBtn{background:#0087FB;color:#fff;opacity:.5}
+  #nextBtn.enabled{opacity:1}
+  #downloadBtn{background:#0087FB;color:#fff;margin-top:20px}
+  #resetBtn{background:#e0e0e0;color:#333;margin-top:10px}
+  #signUpBtn{display:block;text-decoration:none;background:#0087FB;color:#fff;margin-top:10px;padding:12px 16px;border-radius:6px;font-size:1.05rem;text-align:center}
+  .cta-subtext{text-align:center;font-size:.8rem;color:#666;margin-top:5px;margin-bottom:20px}
+  #progressWrap{text-align:center}.progressText{margin-bottom:10px;font-size:1.05rem}
+  .barOuter{width:100%;background:#e0e0e0;border-radius:6px;overflow:hidden;height:14px;margin:0 auto}
+  .barInner{width:0%;height:100%;background:#0087FB}
+  .discount-banner{background:#f9f9f9;color:#333;padding:20px;border:1px solid #e0e0e0;border-radius:8px;text-align:center;margin-bottom:20px}
+  #timer{font-weight:700;font-size:1.1rem;letter-spacing:1px;color:#0087FB}
+  .plan-section{padding:20px;border:1px solid #e0e0e0;border-radius:8px;background:#fdfdfd;text-align:left}
+
+  /* Tiny extra space between emoji headings and divider line */
+  .plan-section h3{
+    font-size:1.35rem;color:#333;border-bottom:2px solid #e0e0e0;
+    padding-bottom:12px; /* spacing tweak */
+    margin:24px 0 16px;
+  }
+  .plan-section h3:first-child{margin-top:10px}
+  .plan-section p,.plan-section li,.plan-section td{line-height:1.6;color:#555}
+  .plan-section ul{list-style:none;padding-left:2.2em}
+  .plan-section ul li{position:relative;padding-left:.5em;margin-bottom:.5em}
+  .plan-section ul li::before{content:'✓';position:absolute;left:-1.5em;color:#0087FB;font-weight:700}
+
+  /* Slider styling (pretty pill track + outlined thumb) */
+  .slider-container{padding:8px 0 16px}
+  #sliderValue{font-size:1.1rem;font-weight:700;color:#0087FB;margin:2px 0 10px}
+  .slider{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:9999px;background:linear-gradient(90deg,#e5e7eb,#d1d5db);outline:none}
+  .slider:hover{filter:brightness(98%)}
+  .slider::-webkit-slider-runnable-track{height:12px;border-radius:9999px;background:linear-gradient(90deg,#e5e7eb,#d1d5db)}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #0087FB;box-shadow:0 2px 4px rgba(0,0,0,.15);margin-top:-7px;cursor:pointer}
+  .slider::-moz-range-track{height:12px;border-radius:9999px;background:linear-gradient(90deg,#e5e7eb,#d1d5db)}
+  .slider::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #0087FB;box-shadow:0 2px 4px rgba(0,0,0,.15);cursor:pointer}
+  .slider-labels{display:flex;justify-content:space-between;font-size:.9rem;color:#666;margin-top:8px}
+
+  /* CLEAN PDF MODE */
+  body.pdf-export-mode{background:#fff}
+  body.pdf-export-mode .card{box-shadow:none;max-width:900px;margin:0 auto}
+  body.pdf-export-mode #offerContainer,
+  body.pdf-export-mode #downloadBtn,
+  body.pdf-export-mode #resetBtn{display:none !important}
+</style>
+
+<div class="card" id="quiz"></div>
+
+<!-- External libs for PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" referrerpolicy="no-referrer"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const DISCOUNT_URL = 'https://www.lukepriddy.com/offers/LEkHeSLU?coupon_code=ACTION';
+  const REPORT_DELAY_MS = 8000; // 8s
+
+  const quizDiv = document.getElementById('quiz');
+  let timerInterval;
+
+  // Safe storage shim
+  const safeStore = (() => {
+    const mem = {};
+    const ok = (t)=>{try{const s=window[t];const k='__p__';s.setItem(k,'1');s.removeItem(k);return s;}catch(e){return null;}};
+    const ss = ok('sessionStorage'), ls = ok('localStorage');
+    return {
+      getS:(k)=> ss?ss.getItem(k):mem['s_'+k]||null,
+      setS:(k,v)=>{if(ss)ss.setItem(k,v);else mem['s_'+k]=v;},
+      getL:(k)=> ls?ls.getItem(k):mem['l_'+k]||null,
+      setL:(k,v)=>{if(ls)ls.setItem(k,v);else mem['l_'+k]=v;},
+      rmL:(k)=>{if(ls)ls.removeItem(k);else delete mem['l_'+k];},
+      rmS:(k)=>{if(ss)ss.removeItem(k);else delete mem['s_'+k];}
+    };
+  })();
+
+  // ---------- Content library (RESTORED) ----------
+  const blocks = {
+    overview: {
+      career: (reasons, skills) => `<h3>Overview</h3><p>You are learning English for <strong>${reasons}</strong> and want to improve <strong>${skills}</strong>. The <strong>English Fluency in 90 Days</strong> program has five courses (50+ hours) taught by <strong>Luke</strong>. Each day you complete assignments, then practice with Luke’s AI assistant <strong>Cathy 🤖</strong>, who corrects grammar and runs realistic job role-plays.</p>`,
+      travel: (reasons, skills) => `<h3>Overview</h3><p>You are learning English for <strong>${reasons}</strong>. You want better <strong>${skills}</strong>. After each section, have a focused session with Luke’s AI assistant <strong>Cathy 🤖</strong> to practice assignments and common situations. Travel role-play scenarios aren’t the focus of the program, but Luke can provide a custom list to help you with that (just ask).</p>`,
+      personal: (reasons, skills) => `<h3>Overview</h3><p>You are learning English for <strong>${reasons}</strong>. You want stronger <strong>${skills}</strong>. The five-course 90-day program (50+ hours) is taught by <strong>Luke</strong>, and is designed help you build a solid foundation of the habits and skills necessary to become fluent in English, once and for all. Cathy, Luke’s AI assistant, will provide feedback in assignments throughout the program, and help you practice conversation and speaking skills.</p>`,
+      enthusiastic: (reasons, skills) => `<h3>Overview</h3><p>You enjoy learning, which is great! To improve <strong>${skills}</strong>, you will need to work hard, which means not just learning and watching lessons, but also doing assignments, and practicing. This program is designed to give you a solid foundation of habits and skills to help you become fluent in English once and for all. In the program, you will complete lessons by Luke, and then practice assignments with <strong>Cathy 🤖</strong>, Luke’s AI assistant. You can also get help from Luke as you go.`,
+      limited: `<h3>Overview</h3><p>You’re a busy person. It’s hard to make time for things like English fluency, but where there is a will, there is a way. The key is to focus your study and practice time in a few blocks during the week, doing practice and reviewing feedback while you are doing other things, like having your morning coffee, or taking the bus. Luke’s 90-day fluency program can be just as impactful for someone learning on the go. Doing assignments and practicing can be done anywhere, using your phone, with Luke’s AI assistant Cathy. Flexibility is the key to success.</p>`
+    },
+    dailyRoutine: {
+      hour: `<h3>📅 Recommended Daily Routine</h3><table><thead><tr><th>Part</th><th>Time</th><th>What to Do</th></tr></thead><tbody><tr><td data-label="Part">Lesson</td><td data-label="Time">35 min</td><td data-label="What to Do">Work through the next lesson and note key phrases.</td></tr><tr><td data-label="Part">Assignment + Practice</td><td data-label="Time">20 min</td><td data-label="What to Do">Finish the assignment and practice new language or skills learned.</td></tr><tr><td data-label="Part">Chat with Cathy</td><td data-label="Time">10 min</td><td data-label="What to Do">Role-play and get corrections.</td></tr></tbody></table>`,
+      half: `<h3>📅 Recommended Daily Routine</h3><table><thead><tr><th>Part</th><th>Time</th><th>What to Do</th></tr></thead><tbody><tr><td data-label="Part">Lesson</td><td data-label="Time">35 min</td><td data-label="What to Do">Work on the next chunk of lessons in the correct order.</td></tr><tr><td data-label="Part">Assignment + Practice</td><td data-label="Time">15 min</td><td data-label="What to Do">Complete the assignment and do additional practice based on new things learned, if there is time.</td></tr><tr><td data-label="Part">Chat with Cathy</td><td data-label="Time">10 min</td><td data-label="What to Do">Quick corrections and taking notes based on feedback.</td></tr></tbody></table>`,
+      limited: `<h3>📅 Recommended Weekly Routine</h3><table><thead><tr><th>Block</th><th>Time</th><th>What to Do</th></tr></thead><tbody><tr><td data--label="Block">Lesson blocks</td><td data-label="Time">≈ 4 hr total</td><td data-label="What to Do">Split into two or three focused sessions.</td></tr><tr><td data-label="Block">Assignment + Practice</td><td data-label="Time">10-15 min after each block</td><td data-label="What to Do">Do assignment right away. Practice other new skills or language when you find time (like on your commute, when you’re having breakfast).</td></tr><tr><td data-label="Block">Chat with Cathy</td><td data-label="Time">10 min flexible</td><td data-label="What to Do">Short conversations for feedback and quick quizzes.</td></tr></tbody></table>`
+    },
+    weeklyCheck: `<h3>🔄 Weekly Check-In</h3><ol><li>Review lessons and note any issues or questions.</li><li>Send Luke a brief progress note on WhatsApp. Ask any questions you may have.</li><li>Set one clear learning goal for next week.</li></ol>`,
+    cathyTips: `<h3>🤖 Using Cathy</h3><ul><li><strong>Instant feedback:</strong> Paste sentences or speech-to-text assignments into assignment GPTs, and be sure to ask follow-up questions.</li><li><strong>Role-plays:</strong> Practice real situations related to course content, and situations related to your goals. use the topics included in the Notion study template, and ask Luke for more topic recommendations if needed.</li><li><strong>Quick quizzes:</strong> Ask for short questions on new language, clarifications on grammar, etc. For quick questions, make a habit of getting immediate answers. This can help you start thinking in English more often throughout the day.</li></ul>`,
+    notionTrack: `<h3>🗂️ Tracking in Notion</h3><ul><li>Log assignments and Cathy’s feedback from assignments, as well as lessons and conversations.</li><li>Save new phrases and common errors, and problem patterns that tend to repeat (ask Cathy to help you identify these). </li><li>Track weekly goals and notes. Review your notes regularly to keep things fresh. Goals should always have some output, and not simply be completing course lessons. Practice is just as important as learning.</li><li>Keep track of conversation and lesson topics so that you can quickly reference them.</li></ul>`,
+    successTips: {
+      career: `<h3>🎯 Tips for Success</h3><ul><li>Use new words and phrases at work or home the same day you learn them.</li><li>Study at the same morning time each day. If you prefer to study/practice another time, keep it consistent. Once you find your ideal time, making that a routine is key to building habits and consistency.</li><li>Check in with Luke daily during the first two weeks. Share progress, questions, feedback, and anything else!</li><li>If you stick to your learning routine, particularly for the first two weeks, give yourself a reward every two weeks. Buy yourself a cake, or whatever! </li></ul>`,
+      travel: `<h3>🎯 Tips for Success</h3><ul><li>Plan an imaginary trip and apply lesson language. Doing role-plays with Cathy, or write dialogues, using the things you are learning. Learning without doing isn’t learning.</li><li>Find the time of day when you feel sharpest and schedule study then. You may need to experiment the first week or two. Once you find your time, stick to it!</li><li>Share one travel story with Luke each week, or perhaps something travel related. Maybe sharing dream vacations, or budget travel tips (Luke loves talking about travel).</li><li>If you stick to your learning routine, particularly for the first two weeks, give yourself a reward every two weeks. Buy yourself a cake, or whatever! </li></ul>`,
+      personal: `<h3>🎯 Tips for Success</h3><ul><li>Apply new grammar to journal entries, or in chat conversations with Cathy (or other AI tools). Always ask for feedback on whether you have used it naturally.</li><li>Pick a slot when you feel focused, not when you are tired. Trying to get meaningful work done when your body and mind aren’t in the right place is like trying to push a boulder up a hill. Don’t do it.</li><li>Send Luke one reflection paragraph each week about things you have learned, things you are curious about, or any issues you are having.</li><li>If you are sticking to your routine, celebrate every two weeks. You deserve it!</li></ul>`,
+      enthusiastic: `<h3>🎯 Tips for Success</h3><ul><li>Work through lessons in order, no skips. The program’s five courses are carefully ordered for maximum progress.</li><li>Attach study sessions to an evening wind-down routine, or if there is another time in the day that works better, just be sure to stick to that time. Finding a specific time window makes it much easier to build a habit around learning. Very important.</li><li>Share progress with Luke for accountability. Ask questions about things you’re struggling with, and share personal takeaways.</li><li>Treat yourself every two weeks.</li></ul>`,
+      limited: `<h3>🎯 Tips for Success</h3><ul><li>Batch work: lessons Monday and Thursday, Cathy chat Wednesday.</li><li>Keep sessions short but focused.</li><li>Ask Luke for quick checkpoints.</li><li>If you are sticking to your routine, celebrate every two weeks. Cake? A day off? You deserve it!</li></ul>`
+    },
+    motivationTips: {
+      high: `<h3>🚀 Motivation Boost</h3><ul><li>Set clear personal goals and hold yourself to them. The best way to do this is share with Luke. For example, “This week I’m planning to complete sections 7, 8, and 9.” If you don’t make it, share that too.</li><li>Record a quick weekly summary to check progress. Send to Cathy for review, and feel free to share with Luke on WhatsApp.</li><li>Try advanced tasks like mock presentations. If you need ideas, ask Luke.</li></ul>`,
+      medium: `<h3>⚙️ Building Consistency</h3><ul><li>Link conversation practice and lesson completion to a fixed habit such as coffee or commute, and write down specific practice goals. Share your goals with Luke for accountability.</li><li>Use a streak tracker and aim for five study days a week. Streaks are a great way to hold yourself accountable.</li><li>Ask a friend or Luke to check in with you once a week, to make sure you’re staying on track. A little pressure can be a good thing.</li></ul>`,
+      low: `<h3>🎈 Starting Small</h3><ul><li>Begin with ten-minute study bursts to get into the habit of learning and practicing. These will help you prove to yourself that you can do it, and it isn’t so hard. It’s the first step on the road to consistency.</li><li>Keep goals tiny: one lesson, one Cathy chat, done. But make sure you’re putting in a total of about four hours per week on lessons.</li><li>Celebrate every completed day. Share what you’ve learned with Luke, as well as any questions you may have. It may also be a good idea to use a streak, which means marking a calendar for each week that you stick to your study goals.</li></ul>`
+    },
+    routineHelp: {
+      yes: `<h3>🧩 Building a Routine</h3><ul><li>Connect study/practice to the same daily trigger, like morning coffee.</li><li>Create a checklist of lessons/practice you will complete tomorrow. Review the checklist at the end of each day.</li><li>Get a wall calendar, a big red marker, and a big green marker. Mark every day you made progress on your English with the green marker. Mark days you didn’t in red. Green good. Red bad.</li></ul>`,
+      no: `<h3>✅ Keep Your Routine Strong</h3><ul><li>If you feel you are getting off track, or unable to get into a routine, change things up! Don’t keep trying the same thing if it isn’t working.</li><li>Find your sweet spots as quickly as you can. That means, when you study, when you practice, and the perfect amount of time to spend for each session.</li></ul>`
+    }
+  };
+
+  // ---------- Quiz data (RESTORED order/content) ----------
+  const steps = [
+    { q:'✏️ Why are you learning English? (choose up to 2)', multi:true, max:2, a:['Career opportunities','Personal goals','Just love learning','Travel','Making connections'] },
+    { q:'💬 How confident do you feel speaking English with other people?', a:['Very confident','Somewhat confident','Not confident at all'] },
+    { type: 'slider', q:'🌍 What do you think is your current English level?', labels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] },
+    { q:'⏳ How long have you been actively studying English?', a:['Less than a year','1-3 years','3-5 years','More than 5 years'] },
+    { q:'🔍 Which areas need the most work? (select up to 3)', multi:true, max:3, a:['Speaking fluency','Listening comprehension','Overall confidence','Pronunciation','Vocabulary and idioms','Grammar and sentence patterns','Writing','Listening'] },
+    { type: 'info', content: 'Most English learners started learning in school 🏫. This can lead to the feeling that English is a subject to learn, rather than a skill to master.<br><br>English fluency is not a subject to study.<br><br><strong>💪 English fluency is a skill!</strong>', buttonText: 'Got it' },
+    { q:'🧠 How often are you able to think in English while speaking?', a:['Always or often','Sometimes','Rarely or never'] },
+    { q:'🎯 How important is it for you to become more fluent in English?', a:['Extremely important','Very important','Somewhat important','Not very important'] },
+    { q:'💪 Are you very self-motivated?', a:['Yes, absolutely','Sometimes','Not at all'] },
+    { q:'🔄 Do you struggle to build new routines?', a:['Yes, I struggle','No, it’s easy','It depends'] },
+    { type: 'info', content: '“🚀 In my 15 years of helping over 300,000 English learners from 190+ countries become more fluent, the single most important thing that determines success is… <strong> 📅 consistency!</strong>”<br><br>- Luke from Cloud English', buttonText: 'Got it' },
+    { q:'⏰ How much time can you invest each day? (choose one)', a:['I can do 1 hour per day','I can do 30 minutes per day','It’s hard to find time'] },
+    { q:'🧐 Which description best matches you as a learner?', a:['I prefer structured lessons and clear rules.','I like to learn by doing and experimenting.','I enjoy social learning and group activities.','I am a visual learner; I need to see it.'] },
+    { q:'🤖 Have you ever practiced English with AI tools like ChatGPT?', a:['All the time','Tried it once or twice','Not yet, but curious'] }
+  ];
+
+  let current = 0, answers = [], selections = [];
+
+  function renderStep(){
+    const s = steps[current];
+    selections = [];
+    const progress = (current * 100) / steps.length;
+    let html = `<div class="progress-container"><div class="progress-bar" style="width:${progress}%"></div></div>`;
+
+    if (s.type === 'info') {
+      html += `
+        <div class="info-screen"><p>${s.content}</p></div>
+        <div class="options"><div class="nav-buttons">
+          <button id="backBtn" onclick="prevStep()" ${current===0?'disabled':''}>Back</button>
+          <button id="nextBtn" class="enabled" onclick="nextStep()">${s.buttonText||'Next'}</button>
+        </div></div>`;
+      selections = ['Info screen viewed']; // ensures indexes match downstream
+    } else if (s.type === 'slider') {
+      html += `
+        <div class="question">${s.q}</div>
+        <div class="slider-container">
+          <div id="sliderValue">Select your level</div>
+          <input type="range" min="0" max="${s.labels.length - 1}" value="2" class="slider" id="levelSlider">
+          <div class="slider-labels">${s.labels.map(l=>`<span>${l}</span>`).join('')}</div>
+        </div>
+        <div class="options"><div class="nav-buttons">
+          <button id="backBtn" onclick="prevStep()" ${current===0?'disabled':''}>Back</button>
+          <button id="nextBtn" onclick="nextStep()">Next</button>
+        </div></div>`;
+    } else {
+      html += `<div class="question">${s.q}</div><div class="options">`;
+      s.a.forEach(o=> html += `<button onclick="toggleSelect(this,'${o.replace(/'/g,"&#39;")}')">${o}</button>`);
+      html += `<div class="nav-buttons">
+        <button id="backBtn" onclick="prevStep()" ${current===0?'disabled':''}>Back</button>
+        <button id="nextBtn" onclick="nextStep()" disabled>Next</button>
+      </div></div>`;
+    }
+    quizDiv.innerHTML = html;
+
+    if (s.type === 'slider') {
+      const slider = document.getElementById('levelSlider');
+      const sliderValue = document.getElementById('sliderValue');
+      const updateSlider = () => {
+        const label = s.labels[slider.value];
+        sliderValue.textContent = label;
+        selections = [label];
+        const nb = document.getElementById('nextBtn');
+        nb.classList.add('enabled'); nb.disabled = false;
+      };
+      slider.addEventListener('input', updateSlider);
+      updateSlider();
+    }
+  }
+
+  window.toggleSelect = function(btn, val){
+    const s = steps[current];
+    const options = btn.parentElement.children;
+    if (s.multi) {
+      if (selections.includes(val)) { selections = selections.filter(x=>x!==val); btn.classList.remove('selected'); }
+      else if (selections.length < s.max) { selections.push(val); btn.classList.add('selected'); }
+    } else {
+      for (let i=0;i<options.length-1;i++) options[i].classList.remove('selected');
+      btn.classList.add('selected'); selections=[val];
+    }
+    const nb = document.getElementById('nextBtn');
+    if (nb){ nb.disabled = !selections.length; nb.classList.toggle('enabled', !!selections.length); }
+  };
+
+  window.prevStep = function(){ if (current>0){ current--; answers.pop(); renderStep(); } };
+  window.nextStep = function(){
+    if (!selections.length) return;
+    answers.push(selections.join(', '));
+    current++;
+    if (current < steps.length) renderStep(); else finish();
+  };
+
+  function formatList(items){
+    if (!items || !items.length) return '';
+    if (items.length===1) return items[0];
+    if (items.length===2) return items.join(' and ');
+    const last=items.pop(); return `${items.join(', ')}, and ${last}`;
+  }
+
+  // Use the original indices that assume the info screens are counted
+  function pickVariant(a){
+    const why = a[0]||'';
+    const what = a[4]||'';
+    const self = a[8]||'';
+    const routine = a[9]||'';
+    const time = a[11]||'';
+
+    const reasons = formatList(why.split(', '));
+    const skills = formatList(what.split(', '));
+    const purpose = /Career/.test(why) ? 'career'
+                   : /(Travel|connections)/i.test(why) ? 'travel'
+                   : /Personal/.test(why) ? 'personal'
+                   : /love learning/i.test(why) ? 'enthusiastic'
+                   : 'limited';
+    const timeKey = /1 hour/.test(time) ? 'hour' : /30 minutes/.test(time) ? 'half' : 'limited';
+    const motKey = /absolutely/.test(self) ? 'high' : /Sometimes/.test(self) ? 'medium' : 'low';
+    const routineKey = /struggle/.test(routine) ? 'yes' : /easy/.test(routine) ? 'no' : 'yes';
+    return { purpose, timeKey, motKey, routineKey, reasons, skills };
+  }
+
+  function assemble(k){
+    const ov = typeof blocks.overview[k.purpose] === 'function'
+      ? blocks.overview[k.purpose](k.reasons, k.skills)
+      : blocks.overview[k.purpose];
+    return `
+      <div id="offerContainer">
+        <div class="discount-banner">
+          <h4>Invest in your English today.</h4>
+          <p>Special 10% discount reserved for: <span id="timer">29:35</span></p>
+        </div>
+        <a id="signUpBtn" href="#" data-url="${DISCOUNT_URL}">Sign up now</a>
+        <p class="cta-subtext">(Opens in new tab)</p>
+      </div>
+      <div class="plan-section">
+        ${ov}
+        ${blocks.dailyRoutine[k.timeKey]}
+        ${blocks.weeklyCheck}
+        ${blocks.cathyTips}
+        ${blocks.notionTrack}
+        ${blocks.successTips[k.purpose]}
+        ${blocks.motivationTips[k.motKey]}
+        ${blocks.routineHelp[k.routineKey]}
+      </div>
+      <button id="downloadBtn">Download as PDF</button>
+      <button id="resetBtn">Start Over</button>`;
+  }
+
+  // CTA click (resilient)
+  document.addEventListener('click', function(e){
+    const cta = e.target.closest('#signUpBtn');
+    if (!cta) return;
+    e.preventDefault();
+    const url = cta.dataset.url || DISCOUNT_URL;
+    window.open(url, '_blank', 'noopener');
+  }, true);
+
+  /* PDF download (clean) */
+  function downloadPDF(){
+    if (!window.jspdf || !window.html2canvas) return;
+    const { jsPDF } = window.jspdf;
+    const reportElement = document.getElementById('quiz');
+    document.body.classList.add('pdf-export-mode');
+    window.scrollTo(0,0);
+    requestAnimationFrame(() => {
+      html2canvas(reportElement, { scale: 2, useCORS: true, backgroundColor:'#ffffff' })
+        .then(canvas => {
+          const img = canvas.toDataURL('image/png');
+          const pdf = new jsPDF({ orientation:'p', unit:'px', format:[canvas.width, canvas.height] });
+          pdf.addImage(img,'PNG',0,0,canvas.width,canvas.height);
+          pdf.save('Your-English-Study-Plan.pdf');
+        })
+        .finally(() => document.body.classList.remove('pdf-export-mode'));
+    });
+  }
+
+  function startTimer(){
+    let endTime = safeStore.getL('discountEndTime');
+    const now = Date.now();
+    if (!endTime || now > +endTime) {
+      endTime = now + (29*60 + 35)*1000;
+      safeStore.setL('discountEndTime', String(endTime));
+    }
+    timerInterval = setInterval(() => {
+      const left = +endTime - Date.now();
+      const el = document.getElementById('timer');
+      if (!el) return;
+      if (left <= 0) { clearInterval(timerInterval); el.textContent = 'Discount Expired'; return; }
+      const m = Math.floor((left % (1000*60*60)) / (1000*60));
+      const s = Math.floor((left % (1000*60)) / 1000);
+      el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+  }
+
+  function showProgressThenPlan(html){
+    quizDiv.innerHTML =
+      '<div id="progressWrap">' +
+        '<div class="progressText">Analyzing your answers...</div>' +
+        '<div class="barOuter"><div class="barInner" id="barInner"></div></div>' +
+      '</div>';
+
+    const bar = document.getElementById('barInner');
+    const tickMs = 100;
+    const totalTicks = Math.ceil(REPORT_DELAY_MS / tickMs);
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      const pct = Math.min(100, Math.round((i/totalTicks)*100));
+      if (bar) bar.style.width = pct + '%';
+      if (i >= totalTicks) {
+        clearInterval(iv);
+        quizDiv.innerHTML = html;
+
+        document.getElementById('downloadBtn')?.addEventListener('click', downloadPDF);
+        document.getElementById('resetBtn')?.addEventListener('click', () => {
+          safeStore.rmS('englishQuizAnswers'); safeStore.rmL('discountEndTime'); location.reload();
+        });
+
+        startTimer();
+      }
+    }, tickMs);
+  }
+
+  function finish(){
+    try { safeStore.setS('englishQuizAnswers', JSON.stringify(answers)); } catch(e){}
+    const keys = pickVariant(answers);
+    const html = assemble(keys);
+
+    document.body.classList.add('report-mode');
+    quizDiv.classList.add('report-mode');
+
+    showProgressThenPlan(html);
+  }
+
+  function checkSession(){
+    let saved = null;
+    try { saved = safeStore.getS('englishQuizAnswers'); } catch(e){}
+    if (saved) {
+      try { answers = JSON.parse(saved) || []; } catch(e){ answers = []; }
+      finish();
+    } else {
+      renderStep();
+    }
+  }
+
+  checkSession();
+});
+</script>

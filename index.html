@@ -447,6 +447,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
   checkSession();
 });
+
+<script>
+/* ---- Auto-height postMessage from child (GitHub Page) ---- */
+(function () {
+  function sendHeight() {
+    try {
+      const h = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+      );
+      parent.postMessage({ type: 'SP_HEIGHT', height: h }, '*');
+    } catch (e) {}
+  }
+
+  // Fire on load and whenever layout changes
+  window.addEventListener('load', sendHeight);
+  new ResizeObserver(sendHeight).observe(document.documentElement);
+  new MutationObserver(sendHeight).observe(document.body, {
+    childList: true, subtree: true, attributes: true, characterData: true
+  });
+
+  // Safety ping in case the observers miss something
+  setInterval(sendHeight, 1000);
+
+  // Expose a manual trigger you can call if you want
+  window.postHeight = sendHeight;
+})();
+</script>
+
 </script>
 
 

@@ -1,8 +1,16 @@
 <style>
   *{box-sizing:border-box}
   body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f5}
-  .card{background:#fff;width:600px;max-width:100%;padding:26px 22px 36px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.08);overflow:auto;max-height:90vh;margin:20px auto}
-  /* Report mode: let the page (not the card) scroll */
+
+  /* Card — page-only scrolling (no inner scrollbar) */
+  .card{
+    background:#fff;width:600px;max-width:100%;
+    padding:26px 22px 36px;border-radius:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
+    margin:20px auto;
+    /* removed overflow:auto; max-height:90vh; */
+  }
+  /* Report mode was used previously; safe to keep */
   .card.report-mode{max-height:none;overflow:visible}
 
   .progress-container{width:100%;background:#e0e0e0;border-radius:4px;margin-bottom:24px;overflow:hidden}
@@ -376,13 +384,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!el || !offer) return;
 
     const tick = () => {
-      // If the offer has been removed elsewhere, stop.
       if (!document.body.contains(offer)) { clearInterval(timerInterval); return; }
-
       const left = +endTime - Date.now();
       if (left <= 0) {
         clearInterval(timerInterval);
-        offer.remove();            // <-- hides timer/banner/button/subtext together
+        offer.remove(); // remove banner + button + subtext together
         return;
       }
       const m = Math.floor((left % (1000*60*60)) / (1000*60));
@@ -447,6 +453,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   checkSession();
 });
+</script>
 
 <script>
 /* ---- Auto-height postMessage from child (GitHub Page) ---- */
@@ -475,7 +482,3 @@ document.addEventListener('DOMContentLoaded', function () {
   window.postHeight = sendHeight;
 })();
 </script>
-
-</script>
-
-
